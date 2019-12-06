@@ -517,7 +517,7 @@ $EndComp
 Wire Wire Line
 	1450 9150 1450 9100
 Wire Wire Line
-	1450 9100 1650 9100
+	1450 9100 1550 9100
 Wire Wire Line
 	1450 9450 1450 9500
 Wire Wire Line
@@ -580,7 +580,6 @@ Wire Wire Line
 Wire Wire Line
 	1450 9500 1450 9900
 Connection ~ 1450 9500
-NoConn ~ 1650 9200
 Wire Wire Line
 	1450 9100 1450 8650
 Wire Wire Line
@@ -4494,14 +4493,21 @@ Connection ~ 5800 3650
 Wire Wire Line
 	5800 3650 5800 3850
 $Comp
-L custom:VCC #PWR?
+L custom:VCC #PWR0102
 U 1 1 5E25C45B
 P 1450 8550
-F 0 "#PWR?" H 1450 8400 50  0001 C CNN
+F 0 "#PWR0102" H 1450 8400 50  0001 C CNN
 F 1 "VCC" H 1465 8723 50  0000 C CNN
 F 2 "" H 1450 8550 50  0001 C CNN
 F 3 "" H 1450 8550 50  0001 C CNN
 	1    1450 8550
 	1    0    0    -1  
 $EndComp
+Wire Wire Line
+	1650 9200 1550 9200
+Wire Wire Line
+	1550 9200 1550 9100
+Connection ~ 1550 9100
+Wire Wire Line
+	1550 9100 1650 9100
 $EndSCHEMATC
