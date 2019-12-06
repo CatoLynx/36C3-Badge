@@ -1,4 +1,4 @@
-8782134189462246
+8791588145938230
 Air_Coils_SML_NEOSID
 Neosid_Air-Coil_SML_1turn_HDM0131A
 Neosid, Air-Coil, SML, 1turn, HDM0131A,
@@ -18032,6 +18032,13 @@ DEV
 1
 1
 custom
+1S_18650_Holder_with_Spacers
+
+
+0
+0
+0
+custom
 8888_7seg
 
 
@@ -18326,6 +18333,13 @@ IN16_Nixie
 13
 13
 custom
+Inductor_3x3mm
+
+
+0
+2
+2
+custom
 Inductor_DJNR6045-S
 
 
@@ -18368,6 +18382,13 @@ LED_RGB_PLCC4
 4
 4
 custom
+LED_SideFacing_0802
+
+
+0
+2
+2
+custom
 Lynx_Logo
 
 
@@ -18381,6 +18402,13 @@ Membrane_Switch_PCB_Only
 0
 2
 2
+custom
+MicroUSB_Amphenol_10118192
+
+
+0
+11
+6
 custom
 MicroUSB_Attend_207A-BBA0-R
 
@@ -18592,6 +18620,13 @@ CMS SOT
 4
 3
 custom
+SOT-457
+
+
+0
+6
+6
+custom
 SSOP-28_5.3x10.2mm_Pitch0.65mm_ThinPads
 28-Lead Plastic Shrink Small Outline (SS)-5.30 mm Body [SSOP] (see Microchip Packaging Specification 00000049BS.pdf)
 SSOP 0.65
@@ -18668,6 +18703,13 @@ USB_B_CONNFLY_DS1099
 0
 6
 5
+custom
+VFD_HCS-12SS59T
+
+
+0
+15
+15
 custom
 Via
 
