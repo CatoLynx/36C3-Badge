@@ -3803,45 +3803,6 @@ F 3 "" H 4950 3400 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	4950 3400 4950 3900
-$Comp
-L device:LED D6
-U 1 1 60827B98
-P 5800 4400
-F 0 "D6" V 5838 4283 50  0000 R CNN
-F 1 "Power" V 5747 4283 50  0000 R CNN
-F 2 "LEDs:LED_0603" H 5800 4400 50  0001 C CNN
-F 3 "~" H 5800 4400 50  0001 C CNN
-	1    5800 4400
-	0    1    -1   0   
-$EndComp
-$Comp
-L device:R R13
-U 1 1 60827B9E
-P 5800 4050
-F 0 "R13" H 5870 4096 50  0000 L CNN
-F 1 "1k" H 5870 4005 50  0000 L CNN
-F 2 "Resistors_SMD:R_0603" V 5730 4050 50  0001 C CNN
-F 3 "~" H 5800 4050 50  0001 C CNN
-	1    5800 4050
-	-1   0    0    -1  
-$EndComp
-Wire Wire Line
-	5800 4200 5800 4250
-Text Notes 5650 4650 0    30   ~ 0
-green
-$Comp
-L power:GND #PWR026
-U 1 1 609D6125
-P 5800 4600
-F 0 "#PWR026" H 5800 4350 50  0001 C CNN
-F 1 "GND" H 5805 4427 50  0000 C CNN
-F 2 "" H 5800 4600 50  0001 C CNN
-F 3 "" H 5800 4600 50  0001 C CNN
-	1    5800 4600
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	5800 4550 5800 4600
 Wire Wire Line
 	15650 2500 15750 2500
 Wire Wire Line
@@ -4463,9 +4424,6 @@ F 3 "~" H 5800 3850 50  0001 C CNN
 	1    5800 3850
 	0    -1   -1   0   
 $EndComp
-Connection ~ 5800 3850
-Wire Wire Line
-	5800 3850 5800 3900
 Wire Wire Line
 	4400 2100 4400 2200
 Wire Wire Line
