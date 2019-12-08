@@ -25,6 +25,3 @@ rescue-backup/
 
 # Production files
 *.zip
-
-# Images
-Images/
