@@ -1,5 +1,5 @@
 "Source:","E:\Google Drive\Dokumente\Elektronik\Projekte\36C3 Badge\36C3_Badge_Hardware\36C3_Badge_Hardware.sch"
-"Date:","06.12.2019 23:34:44"
+"Date:","08.12.2019 22:17:17"
 "Tool:","Eeschema (6.0.0-rc1-dev-557-ge985f797c)"
 "Generator:","E:\Google Drive\configfiles\kicad-lib\scripting\plugins\bom_csv_grouped_custom.py"
 "Component Count:","155"
@@ -160,7 +160,7 @@
 "","","U4","CH330N","custom:CH330N","Housings_SOIC:SOIC-8_3.9x4.9mm_Pitch1.27mm",""
 "","","U5","74LVC2G17","custom:74LVC2G17","custom:SOT-457",""
 "","","U6","ATMEGA328P-AU","atmel:ATMEGA328P-AU","Housings_QFP:TQFP-32_7x7mm_Pitch0.8mm",""
-"","","VFD1","HCS-12SS59T","custom:HCS_12SS59T","custom:VFD_HCS-12SS59T",""
+"","","VFD1","HCS-12SS59T","custom:HCS_12SS59T","custom:VFD_HCS-12SS59T_noSilk",""
 "","","Y1","16MHz","device:Crystal","Crystals:Crystal_HC49-SD_SMD","~"
 
 
@@ -220,5 +220,5 @@
 "50","1","U4","CH330N","custom:CH330N","Housings_SOIC:SOIC-8_3.9x4.9mm_Pitch1.27mm",""
 "51","1","U5","74LVC2G17","custom:74LVC2G17","custom:SOT-457",""
 "52","1","U6","ATMEGA328P-AU","atmel:ATMEGA328P-AU","Housings_QFP:TQFP-32_7x7mm_Pitch0.8mm",""
-"53","1","VFD1","HCS-12SS59T","custom:HCS_12SS59T","custom:VFD_HCS-12SS59T",""
+"53","1","VFD1","HCS-12SS59T","custom:HCS_12SS59T","custom:VFD_HCS-12SS59T_noSilk",""
 "54","1","Y1","16MHz","device:Crystal","Crystals:Crystal_HC49-SD_SMD","~"

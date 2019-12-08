@@ -6,12 +6,12 @@ $Descr A2 23386 16535
 encoding utf-8
 Sheet 1 1
 Title "36C3 Badge"
-Date "2019-12-06"
+Date "2019-12-08"
 Rev "1.0"
 Comp ""
 Comment1 "Julian Metzler"
 Comment2 "@Mezgrman"
-Comment3 ""
+Comment3 "Cato"
 Comment4 ""
 $EndDescr
 $Comp
@@ -3016,12 +3016,12 @@ PMIC_STAT1_~LBO
 $Comp
 L custom:VCC #PWR025
 U 1 1 5DEDF1FF
-P 5800 3400
-F 0 "#PWR025" H 5800 3250 50  0001 C CNN
-F 1 "VCC" H 5815 3573 50  0000 C CNN
-F 2 "" H 5800 3400 50  0001 C CNN
-F 3 "" H 5800 3400 50  0001 C CNN
-	1    5800 3400
+P 4350 3400
+F 0 "#PWR025" H 4350 3250 50  0001 C CNN
+F 1 "VCC" H 4365 3573 50  0000 C CNN
+F 2 "" H 4350 3400 50  0001 C CNN
+F 3 "" H 4350 3400 50  0001 C CNN
+	1    4350 3400
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
@@ -3770,8 +3770,6 @@ Wire Wire Line
 Wire Wire Line
 	16450 2400 16550 2400
 Wire Wire Line
-	4350 3650 4350 3900
-Wire Wire Line
 	4200 4900 5150 4900
 Connection ~ 4950 4700
 Wire Wire Line
@@ -4401,17 +4399,6 @@ F 3 "~" H 3750 2350 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Connection ~ 3750 2350
-$Comp
-L power:PWR_FLAG #FLG0106
-U 1 1 5EB4BC05
-P 5800 3850
-F 0 "#FLG0106" H 5800 3925 50  0001 C CNN
-F 1 "PWR_FLAG" V 5800 3978 50  0000 L CNN
-F 2 "" H 5800 3850 50  0001 C CNN
-F 3 "~" H 5800 3850 50  0001 C CNN
-	1    5800 3850
-	0    -1   -1   0   
-$EndComp
 Wire Wire Line
 	4400 2100 4400 2200
 Wire Wire Line
@@ -4485,13 +4472,6 @@ $EndComp
 Wire Wire Line
 	3000 6500 3000 6600
 Connection ~ 3000 6600
-Wire Wire Line
-	5800 3400 5800 3650
-Wire Wire Line
-	4350 3650 5800 3650
-Connection ~ 5800 3650
-Wire Wire Line
-	5800 3650 5800 3850
 $Comp
 L custom:VCC #PWR0102
 U 1 1 5E25C45B
@@ -4526,4 +4506,6 @@ F 3 "" H 9600 2550 50  0001 C CNN
 	1    9600 2550
 	1    0    0    -1  
 $EndComp
+Wire Wire Line
+	4350 3400 4350 3900
 $EndSCHEMATC

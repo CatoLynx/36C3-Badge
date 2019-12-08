@@ -1,4 +1,4 @@
-8791588145938230
+8799467465299458
 Air_Coils_SML_NEOSID
 Neosid_Air-Coil_SML_1turn_HDM0131A
 Neosid, Air-Coil, SML, 1turn, HDM0131A,
@@ -18036,8 +18036,8 @@ custom
 
 
 0
-0
-0
+2
+2
 custom
 8888_7seg
 
@@ -18241,6 +18241,20 @@ Conn_P3.96mm_1x04_vertical_THT
 0
 4
 4
+custom
+crack_1_H30mm
+
+
+0
+0
+0
+custom
+crack_2_W40mm
+
+
+0
+0
+0
 custom
 DC_DC_Converter_W11.5_L8.5_P2.54
 
@@ -18585,6 +18599,13 @@ Resonator_ZTTCC_X.XX_MG
 3
 3
 custom
+resource_exhaustion_mask
+
+
+0
+0
+0
+custom
 Sandcat_Logo_10mm
 
 
@@ -18633,6 +18654,13 @@ SSOP 0.65
 0
 28
 28
+custom
+StandBy_H3.5mm
+
+
+0
+0
+0
 custom
 SW_DIP_x8_SMD
 
@@ -18705,6 +18733,13 @@ USB_B_CONNFLY_DS1099
 5
 custom
 VFD_HCS-12SS59T
+
+
+0
+15
+15
+custom
+VFD_HCS-12SS59T_noSilk
 
 
 0
