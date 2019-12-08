@@ -3819,19 +3819,19 @@ Text Label 15750 3450 0    50   ~ 0
 SW_BTN1
 Text Label 15750 3550 0    50   ~ 0
 SW_BTN2
-Text Label 15750 2500 0    50   ~ 0
-LED_H1
-Text Label 15750 2600 0    50   ~ 0
-LED_H2
-Text Label 15750 2700 0    50   ~ 0
-LED_D1
-Text Label 15750 2800 0    50   ~ 0
-LED_D2
-Text Label 15750 2900 0    50   ~ 0
-LED_D3
 Text Label 15750 3650 0    50   ~ 0
-PMIC_~PG
+LED_H1
+Text Label 15750 2500 0    50   ~ 0
+LED_H2
+Text Label 15750 2800 0    50   ~ 0
+LED_D1
+Text Label 15750 2900 0    50   ~ 0
+LED_D2
 Text Label 15750 3750 0    50   ~ 0
+LED_D3
+Text Label 15750 2700 0    50   ~ 0
+PMIC_~PG
+Text Label 15750 2600 0    50   ~ 0
 PMIC_STAT1_~LBO
 Wire Notes Line
 	12400 4350 18300 4350
