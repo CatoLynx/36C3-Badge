@@ -1,5 +1,4 @@
-#ifndef VFD_FUN_H
-#define VFD_FUN_H
+#pragma once
 
 #include "badge.h"
 
@@ -10,5 +9,3 @@ enum VFD_FUN_ANIMATIONS {
 };
 
 void vfd_animate_to(char *text, enum VFD_FUN_ANIMATIONS animation);
-
-#endif // VFD_FUN_H

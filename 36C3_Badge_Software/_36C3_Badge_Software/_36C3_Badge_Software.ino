@@ -1,4 +1,11 @@
-// VFD.cpp, vacuum fluroescent example for Samsung HCS-12SS59T, V0.9 171112 qrt@qland.de
+/*
+   Cato's 36C3 Badge
+   https://github.com/Mezgrman/36C3-Badge
+
+   Code to control the VFD based on:
+   https://github.com/qrti/VFD-HCS-12SS59T
+   https://github.com/m42uko/hcs12ss59t
+*/
 
 #include "badge.h"
 #include "animations.h"
@@ -6,34 +13,56 @@
 void setup()
 {
   Serial.begin(9600);
-  Vfd.init();
+  badge.begin();
 
   vfd_animate_to(" Hello 36C3 ", ANIMATION_RANDOM);
-  delay(2000);
+  delay(1000);
   vfd_animate_to("Destruction ", ANIMATION_FLIP);
-  Vfd.setCrack(0, 1);
-  Vfd.setCrack(1, 1);
-  Vfd.setCrack(2, 1);
-  delay(2000);
-  vfd_animate_to("     or     ", ANIMATION_SLIDE);
-  Vfd.setCrack(0, 0);
-  Vfd.setCrack(1, 0);
-  Vfd.setCrack(2, 0);
-  delay(2000);
-  vfd_animate_to("    Hope?   ", ANIMATION_RANDOM);
-  Vfd.setCrack(3, 1);
-  Vfd.setCrack(4, 1);
-  delay(2000);
-  vfd_animate_to("Resource Exhaustion", ANIMATION_FLIP);
-  Vfd.write("Resource Exhaustion     ");
-  Vfd.setCrack(0, 1);
-  Vfd.setCrack(1, 1);
-  Vfd.setCrack(2, 1);
+  badge.setCrack(DESTRUCTION1, 64);
+  badge.setCrack(DESTRUCTION2, 64);
+  badge.setCrack(DESTRUCTION3, 64);
   delay(500);
-  Vfd.scroll(10);                               // scroll left  (+) 20 * 0.01 chars per second
-}                                       //        right (-)
-//        stop  (0)
+  vfd_animate_to("     or     ", ANIMATION_SLIDE);
+  badge.setCrack(DESTRUCTION1, 0);
+  badge.setCrack(DESTRUCTION2, 0);
+  badge.setCrack(DESTRUCTION3, 0);
+  delay(500);
+  vfd_animate_to("    Hope?   ", ANIMATION_RANDOM);
+  badge.setCrack(HOPE1, 64);
+  badge.setCrack(HOPE2, 64);
+  delay(1000);
+  badge.setCrack(HOPE1, 0);
+  badge.setCrack(HOPE2, 0);
+  badge.vfdWriteText("MOW MIU MRAWR MAU MRIUUU  ***  ");
+  delay(500);
+  badge.vfdSetScrollSpeed(10);
+}
+
 void loop()
 {
-
+  for (uint8_t i = 0; i <= 64; i++) {
+    badge.setCrack(DESTRUCTION1, i);
+    badge.setCrack(HOPE2, 64 - i);
+    delay(5);
+  }
+  for (uint8_t i = 0; i <= 64; i++) {
+    badge.setCrack(DESTRUCTION2, i);
+    badge.setCrack(DESTRUCTION1, 64 - i);
+    delay(5);
+  }
+  for (uint8_t i = 0; i <= 64; i++) {
+    badge.setCrack(HOPE1, i);
+    badge.setCrack(DESTRUCTION2, 64 - i);
+    delay(5);
+  }
+  for (uint8_t i = 0; i <= 64; i++) {
+    badge.setCrack(DESTRUCTION3, i);
+    badge.setCrack(HOPE1, 64 - i);
+    delay(5);
+  }
+  for (uint8_t i = 0; i <= 64; i++) {
+    badge.setCrack(HOPE2, i);
+    badge.setCrack(DESTRUCTION3, 64 - i);
+    delay(5);
+  }
 }
