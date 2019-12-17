@@ -1,7 +1,17 @@
 #include "badge.h"
 #include "util.h"
 
+#include <avr/sleep.h>
+
 Badge badge;
+
+void _wakeUp() {
+  badge.wakeUp();
+}
+
+void _sleep() {
+  badge.sleep();
+}
 
 ISR(TIMER2_COMPA_vect) {
   // Timer 2 interrupt, called 8000 times per second
@@ -66,14 +76,18 @@ void Badge::begin() {
   pinMode(PIN_LED_H1, OUTPUT);
   pinMode(PIN_LED_H2, OUTPUT);
 
+  pinMode(PIN_BATT_ADC, INPUT);
+
+  pinMode(PIN_SW_STBY, INPUT_PULLUP);
+  pinMode(PIN_SW_A, INPUT_PULLUP);
+  pinMode(PIN_SW_B, INPUT_PULLUP);
+
   digitalWrite(PIN_VFD_RST, HIGH);
   digitalWrite(PIN_VFD_CS, HIGH);
 
-  // Setup timer 2
-  TCCR2A = 0b00000010;  // CTC mode
-  TCCR2B = 0b00000010;  // F_CPU/8
-  TIMSK2 = 0b00000010;  // OCIE2A (output compare interrupt A) enabled
-  OCR2A  = 250;         // Gives 8000 interrupts per second
+  attachInterrupt(digitalPinToInterrupt(PIN_SW_STBY), _sleep, FALLING);
+
+  startTimer2();
 
   SPI.begin();
 
@@ -85,6 +99,32 @@ void Badge::begin() {
 
   vfdSetBrightness(15);
   vfdSetTestMode(NONE);
+}
+
+void Badge::wakeUp() {
+  // Wake up from sleep mode
+
+  detachInterrupt(digitalPinToInterrupt(PIN_SW_STBY));
+  attachInterrupt(digitalPinToInterrupt(PIN_SW_STBY), _sleep, FALLING);
+  vfdSetSupply(1);
+  startTimer2();
+}
+
+void Badge::sleep() {
+  // Enter sleep mode
+
+  stopTimer2();
+  vfdSetSupply(0);
+  digitalWrite(PIN_LED_D1, 0);
+  digitalWrite(PIN_LED_D2, 0);
+  digitalWrite(PIN_LED_D3, 0);
+  digitalWrite(PIN_LED_H1, 0);
+  digitalWrite(PIN_LED_H2, 0);
+  detachInterrupt(digitalPinToInterrupt(PIN_SW_STBY));
+  attachInterrupt(digitalPinToInterrupt(PIN_SW_STBY), _wakeUp, FALLING);
+  sei();
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  sleep_mode();
 }
 
 void Badge::vfdSetBrightness(uint8_t level) {
@@ -160,66 +200,6 @@ void Badge::vfdSetCharacter(uint8_t addr, char* charData) {
   vfdSendCmdSeq(charData[1], 0);
   vfdSPIDeselect();
   vfdSPIEnd();
-}
-
-void Badge::vfdSetProgressBar(uint8_t top, uint8_t bottom, uint8_t peak_top, uint8_t peak_bottom) {
-  char charconf[VFD_NUM_CHARS * 2];
-  int full;
-  int last;
-  char *ptr;
-  int row;
-
-  // Sanitize input
-  if (top > VFD_NUM_CHARS * 5)
-    top = VFD_NUM_CHARS * 5;
-  if (bottom > VFD_NUM_CHARS * 5)
-    bottom = VFD_NUM_CHARS * 5;
-  if (peak_top > VFD_NUM_CHARS * 5)
-    peak_top = VFD_NUM_CHARS * 5;
-  if (peak_bottom > VFD_NUM_CHARS * 5)
-    peak_bottom = VFD_NUM_CHARS * 5;
-
-  // Clear memory
-  for (ptr = charconf; ptr < charconf + VFD_NUM_CHARS * 2; ++ptr) {
-    *ptr = 0;
-  }
-
-  // Calculate ticks
-  if (peak_top != 0) {
-    peak_top--;
-    ptr = charconf + ((peak_top / 5) * 2);
-    *(ptr++) |= vfdProgressTickChars[0][peak_top % 5][0];
-    *ptr |= vfdProgressTickChars[0][peak_top % 5][1];
-  }
-  if (peak_bottom != 0) {
-    peak_bottom--;
-    ptr = charconf + ((peak_bottom / 5) * 2);
-    *(ptr++) |= vfdProgressTickChars[1][peak_bottom % 5][0];
-    *ptr |= vfdProgressTickChars[1][peak_bottom % 5][1];
-  }
-
-  // Calculate top memory
-  for (row = 0; row < 2; ++row) {
-    if (row == 0) {
-      full = top / 5;
-      last = top % 5;
-    } else {
-      full = bottom / 5;
-      last = bottom % 5;
-    }
-    for (ptr = charconf; ptr < charconf + full * 2; ++ptr) {
-      *(ptr++) |= vfdProgressBarChars[row][0][0];
-      *ptr |= vfdProgressBarChars[row][0][1];
-    }
-    if (last != 0) {
-      *(ptr++) |= vfdProgressBarChars[row][last][0];
-      *ptr |= vfdProgressBarChars[row][last][1];
-    }
-  }
-
-  for (uint8_t i = 0; i < VFD_NUM_CHARS; i++) {
-    vfdSetCharacter(i, charconf + (i * 2));
-  }
 }
 
 void Badge::vfdSetScrollSpeed(uint32_t speed) {
@@ -302,6 +282,14 @@ uint16_t Badge::battGetLevel() {
   // Get the battery level in mV
 
   return VCC_VOLTAGE * (uint32_t)battAverage / 1024.0;
+}
+
+t_Buttons Badge::btnGetAll() {
+  t_Buttons buttons = SW_NONE;
+  if (!digitalRead(PIN_SW_STBY)) buttons |= SW_STBY;
+  if (!digitalRead(PIN_SW_A)) buttons |= SW_A;
+  if (!digitalRead(PIN_SW_B)) buttons |= SW_B;
+  return buttons;
 }
 
 void Badge::vfdReset() {
@@ -393,3 +381,17 @@ void Badge::vfdClearBuffer() {
   memset(vfdBuffer, 0x00, VFD_BUF_SIZE);
 }
 
+void Badge::startTimer2() {
+  // Start timer 2 (used for PWM)
+
+  TCCR2A = 0b00000010;  // CTC mode
+  TCCR2B = 0b00000010;  // F_CPU/8
+  TIMSK2 = 0b00000010;  // OCIE2A (output compare interrupt A) enabled
+  OCR2A  = 250;         // Gives 8000 interrupts per second
+}
+
+void Badge::stopTimer2() {
+  // Stop timer 2
+
+  TCCR2B = 0b00000000;  // Clock disabled
+}

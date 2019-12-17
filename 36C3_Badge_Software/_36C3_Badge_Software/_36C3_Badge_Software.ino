@@ -15,6 +15,8 @@ void setup()
   Serial.begin(9600);
   badge.begin();
 
+  return;
+
   vfd_animate_to(" Hello 36C3 ", ANIMATION_RANDOM);
   delay(1000);
   vfd_animate_to("Destruction ", ANIMATION_FLIP);
@@ -43,7 +45,7 @@ void setup()
 char text[VFD_NUM_CHARS + 1];
 void loop()
 {
-  sprintf(text, "BATTERY %d", (uint16_t)round(badge.battGetLevel() / 10.0));
+  sprintf(text, "BAT %d SW %d", (uint16_t)round(badge.battGetLevel() / 10.0), badge.btnGetAll());
   badge.vfdWriteText(text);
   for (uint8_t i = 0; i <= 64; i++) {
     badge.setCrack(DESTRUCTION1, i);

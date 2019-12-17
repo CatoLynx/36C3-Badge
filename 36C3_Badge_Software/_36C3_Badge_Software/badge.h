@@ -35,6 +35,13 @@ typedef enum VFDTestMode {
   ALL_OFF
 } t_VFDTestMode;
 
+typedef enum Buttons {
+  SW_NONE = 0,
+  SW_STBY = 1,
+  SW_A = 2,
+  SW_B = 4
+} t_Buttons;
+
 class Badge
 {
   public:
@@ -48,6 +55,9 @@ class Badge
     static const int PIN_LED_H1 = 5;
     static const int PIN_LED_H2 = 15;
     static const int PIN_BATT_ADC = A0;
+    static const int PIN_SW_STBY = 2;
+    static const int PIN_SW_A = 3;
+    static const int PIN_SW_B = 4;
 
     volatile uint8_t pwmCounter = 0;
     volatile uint16_t timer2InterruptCounter = 0;
@@ -59,18 +69,20 @@ class Badge
 
     Badge();
     void begin();
+    void wakeUp();
+    void sleep();
     void vfdSetBrightness(uint8_t level);
     void vfdSetSupply(uint8_t state);
     void vfdSetTestMode(t_VFDTestMode mode);
     void vfdWriteText(char* text);
     void vfdSetCharacter(uint8_t addr, char* charData);
-    void vfdSetProgressBar(uint8_t top, uint8_t bottom, uint8_t peak_top, uint8_t peak_bottom);
     void vfdSetScrollSpeed(uint32_t speed);
     void vfdDoScroll();
     char vfdGetCode(char c);
     void setCrack(t_Crack crack, uint8_t value);
     void battUpdateAverage();
     uint16_t battGetLevel();
+    t_Buttons btnGetAll();
 
   protected:
 
@@ -90,40 +102,6 @@ class Badge
     uint16_t battAvgPos = 0;
     uint16_t battAvgValues[BATT_AVG_NUM_VALUES] = {0};
 
-    const char vfdProgressBarChars[2][5][2] = {
-      {
-        {0x84, 0x83}, // Full on
-        {0x80, 0x00}, // 1
-        {0x80, 0x80}, // 2
-        {0x80, 0x81}, // 3
-        {0x80, 0x83} // 4
-      },
-      {
-        {0x48, 0x38}, // Full on
-        {0x40, 0x00}, // 1
-        {0x40, 0x20}, // 2
-        {0x40, 0x30}, // 3
-        {0x40, 0x38} // 4
-      }
-    };
-
-    const char vfdProgressTickChars[2][5][2] = {
-      {
-        {0x80, 0x00}, // 1
-        {0x00, 0x80}, // 2
-        {0x00, 0x01}, // 3
-        {0x00, 0x02}, // 4
-        {0x04, 0x00} // 5
-      },
-      {
-        {0x40, 0x00}, // 1
-        {0x00, 0x20}, // 2
-        {0x00, 0x10}, // 3
-        {0x00, 0x08}, // 4
-        {0x08, 0x00} // 5
-      }
-    };
-
     void vfdReset();
     void vfdSendCmd(char cmd, char arg);
     void vfdSendCmdSeq(char cmd, char arg);
@@ -134,6 +112,8 @@ class Badge
     void vfdSPISelect();
     void vfdSPIDeselect();
     void vfdClearBuffer();
+    void startTimer2();
+    void stopTimer2();
 };
 
 extern Badge badge;
