@@ -82,6 +82,9 @@ void Badge::begin() {
   pinMode(PIN_SW_A, INPUT_PULLUP);
   pinMode(PIN_SW_B, INPUT_PULLUP);
 
+  pinMode(PIN_PMIC_STAT1_LBO, INPUT_PULLUP);
+  pinMode(PIN_PMIC_PG, INPUT_PULLUP);
+
   digitalWrite(PIN_VFD_RST, HIGH);
   digitalWrite(PIN_VFD_CS, HIGH);
 
@@ -285,11 +288,31 @@ uint16_t Badge::battGetLevel() {
 }
 
 t_Buttons Badge::btnGetAll() {
+  // Read all buttons
+
   t_Buttons buttons = SW_NONE;
   if (!digitalRead(PIN_SW_STBY)) buttons |= SW_STBY;
   if (!digitalRead(PIN_SW_A)) buttons |= SW_A;
   if (!digitalRead(PIN_SW_B)) buttons |= SW_B;
   return buttons;
+}
+
+uint8_t Badge::pwrGetUSB() {
+  // Check whether USB power is connected (1) or not (0)
+
+  return !digitalRead(PIN_PMIC_PG);
+}
+
+uint8_t Badge::pwrGetCharging() {
+  // Check whether the battery is charging (1) or not (0)
+
+  return !digitalRead(PIN_PMIC_STAT1_LBO) && !digitalRead(PIN_PMIC_PG);
+}
+
+uint8_t Badge::pwrGetLowBatt() {
+  // Check whether the battery level is low (1) or not (0)
+
+  return !digitalRead(PIN_PMIC_STAT1_LBO) && digitalRead(PIN_PMIC_PG);
 }
 
 void Badge::vfdReset() {

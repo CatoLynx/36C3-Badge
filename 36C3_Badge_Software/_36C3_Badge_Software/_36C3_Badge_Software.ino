@@ -43,9 +43,37 @@ void setup()
 }
 
 char text[VFD_NUM_CHARS + 1];
+uint8_t curUSB, oldUSB = 0;
+uint8_t curChg, oldChg = 0;
+uint8_t curLow, oldLow = 0;
 void loop()
 {
-  sprintf(text, "BAT %d SW %d", (uint16_t)round(badge.battGetLevel() / 10.0), badge.btnGetAll());
+  curUSB = badge.pwrGetUSB();
+  curChg = badge.pwrGetCharging();
+  curLow = badge.pwrGetLowBatt();
+
+  if (curUSB && !oldUSB) {
+    badge.vfdWriteText("USB POWER");
+    delay(1000);
+  } else if (!curUSB && oldUSB) {
+    badge.vfdWriteText("BATT POWER");
+    delay(1000);
+  }
+
+  if (curChg && !oldChg) {
+    badge.vfdWriteText("CHARGING");
+    delay(1000);
+  } else if (!curChg && oldChg) {
+    badge.vfdWriteText("CHARGED");
+    delay(1000);
+  }
+
+  if (curLow && !oldLow) {
+    badge.vfdWriteText("LOW BATT");
+    delay(1000);
+  }
+
+  sprintf(text, "BATTERY %d", (uint16_t)round(badge.battGetLevel() / 10.0));
   badge.vfdWriteText(text);
   for (uint8_t i = 0; i <= 64; i++) {
     badge.setCrack(DESTRUCTION1, i);
@@ -72,4 +100,8 @@ void loop()
     badge.setCrack(DESTRUCTION3, 64 - i);
     delay(5);
   }
+
+  oldUSB = curUSB;
+  oldChg = curChg;
+  oldLow = curLow;
 }

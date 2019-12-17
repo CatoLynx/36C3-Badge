@@ -58,6 +58,8 @@ class Badge
     static const int PIN_SW_STBY = 2;
     static const int PIN_SW_A = 3;
     static const int PIN_SW_B = 4;
+    static const int PIN_PMIC_STAT1_LBO = 16; // LBO active low
+    static const int PIN_PMIC_PG = 17;  // active low
 
     volatile uint8_t pwmCounter = 0;
     volatile uint16_t timer2InterruptCounter = 0;
@@ -83,6 +85,9 @@ class Badge
     void battUpdateAverage();
     uint16_t battGetLevel();
     t_Buttons btnGetAll();
+    uint8_t pwrGetUSB();
+    uint8_t pwrGetCharging();
+    uint8_t pwrGetLowBatt();
 
   protected:
 
