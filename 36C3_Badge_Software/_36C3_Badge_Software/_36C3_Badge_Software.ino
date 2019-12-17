@@ -33,13 +33,18 @@ void setup()
   delay(1000);
   badge.setCrack(HOPE1, 0);
   badge.setCrack(HOPE2, 0);
-  badge.vfdWriteText("MOW MIU MRAWR MAU MRIUUU  ***  ");
+  badge.vfdWriteText("AND NOW - A MESSAGE FROM OUR SPONSORS            ");
   delay(500);
-  badge.vfdSetScrollSpeed(10);
+  badge.vfdSetScrollSpeed(1);
+  delay(3700);
+  badge.vfdSetScrollSpeed(0);
 }
 
+char text[VFD_NUM_CHARS + 1];
 void loop()
 {
+  sprintf(text, "BATTERY %d", (uint16_t)round(badge.battGetLevel() / 10.0));
+  badge.vfdWriteText(text);
   for (uint8_t i = 0; i <= 64; i++) {
     badge.setCrack(DESTRUCTION1, i);
     badge.setCrack(HOPE2, 64 - i);

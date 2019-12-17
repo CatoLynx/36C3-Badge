@@ -1,8 +1,11 @@
 #include "badge.h"
+#include "util.h"
 
 Badge badge;
 
 ISR(TIMER2_COMPA_vect) {
+  // Timer 2 interrupt, called 8000 times per second
+
   // Handle PWM
   badge.pwmCounter++;
   if (badge.pwmCounter >= 64) badge.pwmCounter = 0;
@@ -33,8 +36,16 @@ ISR(TIMER2_COMPA_vect) {
     digitalWrite(badge.PIN_LED_H2, 1);
   }
 
-  // Handle VFD scrolling
-  badge.vfdDoScroll();
+  badge.timer2InterruptCounter++;
+  if (badge.timer2InterruptCounter % 800 == 0) {
+    // Called every 100ms
+    badge.vfdDoScroll();
+    badge.battUpdateAverage();
+  }
+  if (badge.timer2InterruptCounter % 8000 == 0) {
+    // Called every second
+    badge.timer2InterruptCounter = 0;
+  }
 }
 
 Badge::Badge() {
@@ -141,10 +152,80 @@ void Badge::vfdWriteText(char* text) {
   vfdUpdate();
 }
 
-void Badge::vfdSetScrollSpeed(uint32_t speed) {
-  // Enable scrolling on the VFD
+void Badge::vfdSetCharacter(uint8_t addr, char* charData) {
+  vfdSPIBegin();
+  vfdSPISelect();
+  vfdSendCmdSeq(VFD_CGRAM_WR, addr & 0x0f);
+  vfdSendCmdSeq(charData[0], 0);
+  vfdSendCmdSeq(charData[1], 0);
+  vfdSPIDeselect();
+  vfdSPIEnd();
+}
 
-  vfdScrollSpeed = speed * 100;
+void Badge::vfdSetProgressBar(uint8_t top, uint8_t bottom, uint8_t peak_top, uint8_t peak_bottom) {
+  char charconf[VFD_NUM_CHARS * 2];
+  int full;
+  int last;
+  char *ptr;
+  int row;
+
+  // Sanitize input
+  if (top > VFD_NUM_CHARS * 5)
+    top = VFD_NUM_CHARS * 5;
+  if (bottom > VFD_NUM_CHARS * 5)
+    bottom = VFD_NUM_CHARS * 5;
+  if (peak_top > VFD_NUM_CHARS * 5)
+    peak_top = VFD_NUM_CHARS * 5;
+  if (peak_bottom > VFD_NUM_CHARS * 5)
+    peak_bottom = VFD_NUM_CHARS * 5;
+
+  // Clear memory
+  for (ptr = charconf; ptr < charconf + VFD_NUM_CHARS * 2; ++ptr) {
+    *ptr = 0;
+  }
+
+  // Calculate ticks
+  if (peak_top != 0) {
+    peak_top--;
+    ptr = charconf + ((peak_top / 5) * 2);
+    *(ptr++) |= vfdProgressTickChars[0][peak_top % 5][0];
+    *ptr |= vfdProgressTickChars[0][peak_top % 5][1];
+  }
+  if (peak_bottom != 0) {
+    peak_bottom--;
+    ptr = charconf + ((peak_bottom / 5) * 2);
+    *(ptr++) |= vfdProgressTickChars[1][peak_bottom % 5][0];
+    *ptr |= vfdProgressTickChars[1][peak_bottom % 5][1];
+  }
+
+  // Calculate top memory
+  for (row = 0; row < 2; ++row) {
+    if (row == 0) {
+      full = top / 5;
+      last = top % 5;
+    } else {
+      full = bottom / 5;
+      last = bottom % 5;
+    }
+    for (ptr = charconf; ptr < charconf + full * 2; ++ptr) {
+      *(ptr++) |= vfdProgressBarChars[row][0][0];
+      *ptr |= vfdProgressBarChars[row][0][1];
+    }
+    if (last != 0) {
+      *(ptr++) |= vfdProgressBarChars[row][last][0];
+      *ptr |= vfdProgressBarChars[row][last][1];
+    }
+  }
+
+  for (uint8_t i = 0; i < VFD_NUM_CHARS; i++) {
+    vfdSetCharacter(i, charconf + (i * 2));
+  }
+}
+
+void Badge::vfdSetScrollSpeed(uint32_t speed) {
+  // Enable scrolling on the VFD. Speed = number of 100ms intervals between movements
+
+  vfdScrollSpeed = speed;
 }
 
 void Badge::vfdDoScroll() {
@@ -178,7 +259,7 @@ char Badge::vfdGetCode(char c) {
     c += 16;
   else if (c >= 'a' && c <= 'z') // 97.. -> 17..
     c -= 80;
-  else                // invalid -> ?
+  else if (c > 15)  // invalid and not a custom char -> ?
     c = 79;
 
   return c;
@@ -211,6 +292,18 @@ void Badge::setCrack(t_Crack crack, uint8_t value) {
   }
 }
 
+void Badge::battUpdateAverage() {
+  battAverage = movingAvg(battAvgValues, &battAvgSum, battAvgPos, BATT_AVG_NUM_VALUES, analogRead(PIN_BATT_ADC));
+  battAvgPos++;
+  if (battAvgPos >= BATT_AVG_NUM_VALUES) battAvgPos = 0;
+}
+
+uint16_t Badge::battGetLevel() {
+  // Get the battery level in mV
+
+  return VCC_VOLTAGE * (uint32_t)battAverage / 1024.0;
+}
+
 void Badge::vfdReset() {
   // Perform a hardware reset of the VFD
 
@@ -225,8 +318,7 @@ void Badge::vfdSendCmd(char cmd, char arg) {
 
   vfdSPIBegin();
   vfdSPISelect();
-  SPI.transfer(cmd | arg);
-  delayMicroseconds(8); // 1/2 tCSH
+  vfdSendCmdSeq(cmd, arg);
   vfdSPIDeselect();
   vfdSPIEnd();
 }
@@ -235,7 +327,7 @@ void Badge::vfdSendCmdSeq(char cmd, char arg) {
   // Just send a command to the VFD (if a transfer has already been initialized)
 
   SPI.transfer(cmd | arg);
-  delayMicroseconds(8); // tDOFF
+  delayMicroseconds(8); // tDOFF ; 1/2 tCSH
 }
 
 void Badge::vfdSendChar(char c) {
