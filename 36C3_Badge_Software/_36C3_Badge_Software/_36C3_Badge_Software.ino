@@ -75,30 +75,42 @@ void loop()
 
   sprintf(text, "BATTERY %d", (uint16_t)round(badge.battGetLevel() / 10.0));
   badge.vfdWriteText(text);
-  for (uint8_t i = 0; i <= 64; i++) {
-    badge.setCrack(DESTRUCTION1, i);
-    badge.setCrack(HOPE2, 64 - i);
-    delay(5);
-  }
-  for (uint8_t i = 0; i <= 64; i++) {
-    badge.setCrack(DESTRUCTION2, i);
-    badge.setCrack(DESTRUCTION1, 64 - i);
-    delay(5);
-  }
-  for (uint8_t i = 0; i <= 64; i++) {
-    badge.setCrack(HOPE1, i);
-    badge.setCrack(DESTRUCTION2, 64 - i);
-    delay(5);
-  }
-  for (uint8_t i = 0; i <= 64; i++) {
-    badge.setCrack(DESTRUCTION3, i);
-    badge.setCrack(HOPE1, 64 - i);
-    delay(5);
-  }
-  for (uint8_t i = 0; i <= 64; i++) {
-    badge.setCrack(HOPE2, i);
-    badge.setCrack(DESTRUCTION3, 64 - i);
-    delay(5);
+
+  if (curChg) {
+    for (uint8_t i = 15; i <= 64; i++) {
+      badge.setCrack(HOPE2, i);
+      delay(50);
+    }
+    for (uint8_t i = 64; i >= 15; i--) {
+      badge.setCrack(HOPE2, i);
+      delay(50);
+    }
+  } else {
+    for (uint8_t i = 0; i <= 64; i++) {
+      badge.setCrack(DESTRUCTION1, i);
+      badge.setCrack(HOPE2, 64 - i);
+      delay(5);
+    }
+    for (uint8_t i = 0; i <= 64; i++) {
+      badge.setCrack(DESTRUCTION2, i);
+      badge.setCrack(DESTRUCTION1, 64 - i);
+      delay(5);
+    }
+    for (uint8_t i = 0; i <= 64; i++) {
+      badge.setCrack(HOPE1, i);
+      badge.setCrack(DESTRUCTION2, 64 - i);
+      delay(5);
+    }
+    for (uint8_t i = 0; i <= 64; i++) {
+      badge.setCrack(DESTRUCTION3, i);
+      badge.setCrack(HOPE1, 64 - i);
+      delay(5);
+    }
+    for (uint8_t i = 0; i <= 64; i++) {
+      badge.setCrack(HOPE2, i);
+      badge.setCrack(DESTRUCTION3, 64 - i);
+      delay(5);
+    }
   }
 
   oldUSB = curUSB;
