@@ -195,6 +195,73 @@ void Badge::vfdWriteText(char* text) {
   vfdUpdate();
 }
 
+void Badge::vfdAnimate(char *text, t_VFDAnimation animation)
+{
+  int i, j;
+  int done = 0;
+  static char last[VFD_NUM_CHARS];
+  static char next[VFD_NUM_CHARS + 1];
+
+  switch (animation) {
+    case ANIMATION_RANDOM:
+      for (int j = 0; j < 25; ++j) {
+        for (i = 0; i < VFD_NUM_CHARS; ++i) {
+          next[i] = rand() % 26 + 'A';
+        }
+        next[VFD_NUM_CHARS] = 0x00;
+        vfdWriteText(next);
+        _delay_ms(VFD_ANI_DELAY);
+      }
+
+      vfdWriteText(text);
+      break;
+
+    case ANIMATION_FLIP:
+      while (!done) {
+        for (int j = 0; j < 25; ++j) {
+          done = 1;
+          for (i = 0; i < VFD_NUM_CHARS; ++i) {
+            if (last[i] > text[i]) {
+              while (vfdGetCode(--last[i]) == 79) {
+                if (last[i] == '?')
+                  break;
+              }
+              done = 0;
+            } else if (last[i] < text[i]) {
+              while (vfdGetCode(++last[i]) == 79) {
+                if (last[i] == '?')
+                  break;
+              }
+              done = 0;
+            }
+          }
+          vfdWriteText(last);
+          _delay_ms(VFD_ANI_DELAY);
+        }
+      }
+      break;
+
+    case ANIMATION_SLIDE:
+      for (j = 0; j < VFD_NUM_CHARS; ++j) {
+        for (i = 1; i < VFD_NUM_CHARS; ++i) {
+          last[i - 1] = last[i];
+        }
+        last[VFD_NUM_CHARS - 1] = text[j];
+        vfdWriteText(last);
+        _delay_ms(VFD_ANI_DELAY);
+      }
+      break;
+
+    default:
+      vfdWriteText(text);
+      break;
+  }
+
+  for (i = 0; i < VFD_NUM_CHARS; ++i) {
+    last[i] = text[i];
+  }
+}
+
 void Badge::vfdSetCharacter(uint8_t addr, char* charData) {
   vfdSPIBegin();
   vfdSPISelect();
@@ -314,6 +381,8 @@ uint8_t Badge::pwrGetLowBatt() {
 
   return !digitalRead(PIN_PMIC_STAT1_LBO) && digitalRead(PIN_PMIC_PG);
 }
+
+// PRIVATE PARTS
 
 void Badge::vfdReset() {
   // Perform a hardware reset of the VFD

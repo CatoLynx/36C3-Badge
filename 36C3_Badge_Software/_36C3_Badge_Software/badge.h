@@ -21,6 +21,8 @@
 #define VFD_NUM_CHARS 12    // Number of characters on VFD
 #define VFD_BUF_SIZE  100   // Scroll buffer for VFD
 
+#define VFD_ANI_DELAY 15    // Animation frame delay in milliseconds
+
 typedef enum Crack {
   DESTRUCTION1,
   DESTRUCTION2,
@@ -41,6 +43,12 @@ typedef enum Buttons {
   SW_A = 2,
   SW_B = 4
 } t_Buttons;
+
+typedef enum VFDAnimations {
+  ANIMATION_RANDOM,
+  ANIMATION_FLIP,
+  ANIMATION_SLIDE
+} t_VFDAnimation;
 
 class Badge
 {
@@ -77,6 +85,7 @@ class Badge
     void vfdSetSupply(uint8_t state);
     void vfdSetTestMode(t_VFDTestMode mode);
     void vfdWriteText(char* text);
+    void vfdAnimate(char *text, t_VFDAnimation animation);
     void vfdSetCharacter(uint8_t addr, char* charData);
     void vfdSetScrollSpeed(uint32_t speed);
     void vfdDoScroll();

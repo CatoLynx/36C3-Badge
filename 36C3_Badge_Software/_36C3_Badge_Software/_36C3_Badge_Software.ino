@@ -8,7 +8,6 @@
 */
 
 #include "badge.h"
-#include "animations.h"
 
 void setup()
 {
@@ -17,19 +16,19 @@ void setup()
 
   return;
 
-  vfd_animate_to(" Hello 36C3 ", ANIMATION_RANDOM);
+  badge.vfdAnimate(" Hello 36C3 ", ANIMATION_RANDOM);
   delay(1000);
-  vfd_animate_to("Destruction ", ANIMATION_FLIP);
+  badge.vfdAnimate("Destruction ", ANIMATION_FLIP);
   badge.setCrack(DESTRUCTION1, 64);
   badge.setCrack(DESTRUCTION2, 64);
   badge.setCrack(DESTRUCTION3, 64);
   delay(500);
-  vfd_animate_to("     or     ", ANIMATION_SLIDE);
+  badge.vfdAnimate("     or     ", ANIMATION_SLIDE);
   badge.setCrack(DESTRUCTION1, 0);
   badge.setCrack(DESTRUCTION2, 0);
   badge.setCrack(DESTRUCTION3, 0);
   delay(500);
-  vfd_animate_to("    Hope?   ", ANIMATION_RANDOM);
+  badge.vfdAnimate("    Hope?   ", ANIMATION_RANDOM);
   badge.setCrack(HOPE1, 64);
   badge.setCrack(HOPE2, 64);
   delay(1000);
