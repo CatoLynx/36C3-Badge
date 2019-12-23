@@ -45,6 +45,7 @@ typedef enum Buttons {
 } t_Buttons;
 
 typedef enum VFDAnimations {
+  ANIMATION_NONE,
   ANIMATION_RANDOM,
   ANIMATION_FLIP,
   ANIMATION_SLIDE
@@ -92,7 +93,8 @@ class Badge
     char vfdGetCode(char c);
     void setCrack(t_Crack crack, uint8_t value);
     void battUpdateAverage();
-    uint16_t battGetLevel();
+    uint16_t battGetVoltage();
+    uint8_t battGetLevel();
     t_Buttons btnGetAll();
     uint8_t pwrGetUSB();
     uint8_t pwrGetCharging();

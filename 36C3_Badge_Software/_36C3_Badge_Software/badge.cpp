@@ -14,7 +14,7 @@ void _sleep() {
 }
 
 ISR(TIMER2_COMPA_vect) {
-  // Timer 2 interrupt, called 8000 times per second
+  // Timer 2 interrupt, running at 8000 Hz
 
   // Handle PWM
   badge.pwmCounter++;
@@ -47,9 +47,12 @@ ISR(TIMER2_COMPA_vect) {
   }
 
   badge.timer2InterruptCounter++;
+  if (badge.timer2InterruptCounter % 80 == 0) {
+    // Called every 10ms
+    badge.vfdDoScroll();
+  }
   if (badge.timer2InterruptCounter % 800 == 0) {
     // Called every 100ms
-    badge.vfdDoScroll();
     badge.battUpdateAverage();
   }
   if (badge.timer2InterruptCounter % 8000 == 0) {
@@ -203,58 +206,64 @@ void Badge::vfdAnimate(char *text, t_VFDAnimation animation)
   static char next[VFD_NUM_CHARS + 1];
 
   switch (animation) {
-    case ANIMATION_RANDOM:
-      for (int j = 0; j < 25; ++j) {
-        for (i = 0; i < VFD_NUM_CHARS; ++i) {
-          next[i] = rand() % 26 + 'A';
+    case ANIMATION_RANDOM: {
+        for (int j = 0; j < 25; ++j) {
+          for (i = 0; i < VFD_NUM_CHARS; ++i) {
+            next[i] = rand() % 26 + 'A';
+          }
+          next[VFD_NUM_CHARS] = 0x00;
+          vfdWriteText(next);
+          _delay_ms(VFD_ANI_DELAY);
         }
-        next[VFD_NUM_CHARS] = 0x00;
-        vfdWriteText(next);
-        _delay_ms(VFD_ANI_DELAY);
+
+        vfdWriteText(text);
+        break;
       }
 
-      vfdWriteText(text);
-      break;
-
-    case ANIMATION_FLIP:
-      while (!done) {
-        for (int j = 0; j < 25; ++j) {
-          done = 1;
-          for (i = 0; i < VFD_NUM_CHARS; ++i) {
-            if (last[i] > text[i]) {
-              while (vfdGetCode(--last[i]) == 79) {
-                if (last[i] == '?')
-                  break;
+    case ANIMATION_FLIP: {
+        while (!done) {
+          for (int j = 0; j < 25; ++j) {
+            done = 1;
+            for (i = 0; i < VFD_NUM_CHARS; ++i) {
+              if (last[i] > text[i]) {
+                while (vfdGetCode(--last[i]) == 79) {
+                  if (last[i] == '?')
+                    break;
+                }
+                done = 0;
+              } else if (last[i] < text[i]) {
+                while (vfdGetCode(++last[i]) == 79) {
+                  if (last[i] == '?')
+                    break;
+                }
+                done = 0;
               }
-              done = 0;
-            } else if (last[i] < text[i]) {
-              while (vfdGetCode(++last[i]) == 79) {
-                if (last[i] == '?')
-                  break;
-              }
-              done = 0;
             }
+            vfdWriteText(last);
+            _delay_ms(VFD_ANI_DELAY);
           }
+        }
+        vfdWriteText(text);
+        break;
+      }
+
+    case ANIMATION_SLIDE: {
+        for (j = 0; j < VFD_NUM_CHARS; ++j) {
+          for (i = 1; i < VFD_NUM_CHARS; ++i) {
+            last[i - 1] = last[i];
+          }
+          last[VFD_NUM_CHARS - 1] = text[j];
           vfdWriteText(last);
           _delay_ms(VFD_ANI_DELAY);
         }
+        vfdWriteText(text);
+        break;
       }
-      break;
 
-    case ANIMATION_SLIDE:
-      for (j = 0; j < VFD_NUM_CHARS; ++j) {
-        for (i = 1; i < VFD_NUM_CHARS; ++i) {
-          last[i - 1] = last[i];
-        }
-        last[VFD_NUM_CHARS - 1] = text[j];
-        vfdWriteText(last);
-        _delay_ms(VFD_ANI_DELAY);
+    default: {
+        vfdWriteText(text);
+        break;
       }
-      break;
-
-    default:
-      vfdWriteText(text);
-      break;
   }
 
   for (i = 0; i < VFD_NUM_CHARS; ++i) {
@@ -273,7 +282,7 @@ void Badge::vfdSetCharacter(uint8_t addr, char* charData) {
 }
 
 void Badge::vfdSetScrollSpeed(uint32_t speed) {
-  // Enable scrolling on the VFD. Speed = number of 100ms intervals between movements
+  // Enable scrolling on the VFD. Speed = number of 10ms intervals between movements
 
   vfdScrollSpeed = speed;
 }
@@ -348,10 +357,19 @@ void Badge::battUpdateAverage() {
   if (battAvgPos >= BATT_AVG_NUM_VALUES) battAvgPos = 0;
 }
 
-uint16_t Badge::battGetLevel() {
+uint16_t Badge::battGetVoltage() {
   // Get the battery level in mV
 
   return VCC_VOLTAGE * (uint32_t)battAverage / 1024.0;
+}
+
+uint8_t Badge::battGetLevel() {
+  // Get the battery level in percent
+
+  uint8_t percentage = map(battGetVoltage(), 3000, 4200, 0, 100);
+  if (percentage < 0) percentage = 0;
+  if (percentage > 100) percentage = 100;
+  return percentage;
 }
 
 t_Buttons Badge::btnGetAll() {

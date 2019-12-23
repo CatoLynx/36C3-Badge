@@ -8,48 +8,52 @@
 */
 
 #include "badge.h"
+#include "config.h"
+#include "util.h"
 
-void setup()
-{
-  Serial.begin(9600);
-  badge.begin();
-
-  return;
-
-  badge.vfdAnimate(" Hello 36C3 ", ANIMATION_RANDOM);
-  delay(1000);
-  badge.vfdAnimate("Destruction ", ANIMATION_FLIP);
-  badge.setCrack(DESTRUCTION1, 64);
-  badge.setCrack(DESTRUCTION2, 64);
-  badge.setCrack(DESTRUCTION3, 64);
-  delay(500);
-  badge.vfdAnimate("     or     ", ANIMATION_SLIDE);
-  badge.setCrack(DESTRUCTION1, 0);
-  badge.setCrack(DESTRUCTION2, 0);
-  badge.setCrack(DESTRUCTION3, 0);
-  delay(500);
-  badge.vfdAnimate("    Hope?   ", ANIMATION_RANDOM);
-  badge.setCrack(HOPE1, 64);
-  badge.setCrack(HOPE2, 64);
-  delay(1000);
-  badge.setCrack(HOPE1, 0);
-  badge.setCrack(HOPE2, 0);
-  badge.vfdWriteText("AND NOW - A MESSAGE FROM OUR SPONSORS            ");
-  delay(500);
-  badge.vfdSetScrollSpeed(1);
-  delay(3700);
-  badge.vfdSetScrollSpeed(0);
-}
-
-char text[VFD_NUM_CHARS + 1];
+char text[VFD_BUF_SIZE];
 uint8_t curUSB, oldUSB = 0;
 uint8_t curChg, oldChg = 0;
 uint8_t curLow, oldLow = 0;
+t_Buttons oldButtons, curButtons;
+
+uint8_t curVFDTextListIndex = 0;
+uint8_t curVFDTextIndex = 0;
+
+uint8_t curLEDAnimationListIndex = 0;
+uint8_t curLEDAnimationIndex = 0;
+
+vfd_text_list_t curVFDTextList;
+vfd_text_t curVFDText;
+led_animation_list_t curLEDAnimationList;
+led_animation_t curLEDAnimation;
+
+uint8_t forceVFDTextUpdate = 1;
+uint8_t forceLEDAnimationUpdate = 1;
+
+uint64_t lastLEDAnimationUpdate = 0;
+uint64_t lastLEDAnimationSwitch = 0;
+uint64_t lastVFDTextSwitch = 0;
+uint64_t now = 0;
+
+void setup()
+{
+  Serial.begin(115200);
+  badge.begin();
+
+  curVFDTextList = VFD_TEXTS[curVFDTextListIndex];
+  curVFDText = curVFDTextList.texts[curVFDTextIndex];
+  curLEDAnimationList = LED_ANIMATIONS[curLEDAnimationListIndex];
+  curLEDAnimation = curLEDAnimationList.animations[curLEDAnimationIndex];
+}
+
 void loop()
 {
+  now = millis();
   curUSB = badge.pwrGetUSB();
   curChg = badge.pwrGetCharging();
   curLow = badge.pwrGetLowBatt();
+  curButtons = badge.btnGetAll();
 
   if (curUSB && !oldUSB) {
     badge.vfdWriteText("USB POWER");
@@ -72,47 +76,56 @@ void loop()
     delay(1000);
   }
 
-  sprintf(text, "BATTERY %d", (uint16_t)round(badge.battGetLevel() / 10.0));
-  badge.vfdWriteText(text);
+  if (!(oldButtons & SW_A) && (curButtons & SW_A)) {
+    // Button A has been pressed, cycle VFD text list
+    curVFDTextListIndex++;
+    if (curVFDTextListIndex >= ArraySize(VFD_TEXTS)) curVFDTextListIndex = 0;
+    curVFDTextIndex = 0;
+    curVFDTextList = VFD_TEXTS[curVFDTextListIndex];
+    curVFDText = curVFDTextList.texts[curVFDTextIndex];
+    forceVFDTextUpdate = 1; // force update
+  }
 
-  if (curChg) {
-    for (uint8_t i = 15; i <= 64; i++) {
-      badge.setCrack(HOPE2, i);
-      delay(50);
-    }
-    for (uint8_t i = 64; i >= 15; i--) {
-      badge.setCrack(HOPE2, i);
-      delay(50);
-    }
-  } else {
-    for (uint8_t i = 0; i <= 64; i++) {
-      badge.setCrack(DESTRUCTION1, i);
-      badge.setCrack(HOPE2, 64 - i);
-      delay(5);
-    }
-    for (uint8_t i = 0; i <= 64; i++) {
-      badge.setCrack(DESTRUCTION2, i);
-      badge.setCrack(DESTRUCTION1, 64 - i);
-      delay(5);
-    }
-    for (uint8_t i = 0; i <= 64; i++) {
-      badge.setCrack(HOPE1, i);
-      badge.setCrack(DESTRUCTION2, 64 - i);
-      delay(5);
-    }
-    for (uint8_t i = 0; i <= 64; i++) {
-      badge.setCrack(DESTRUCTION3, i);
-      badge.setCrack(HOPE1, 64 - i);
-      delay(5);
-    }
-    for (uint8_t i = 0; i <= 64; i++) {
-      badge.setCrack(HOPE2, i);
-      badge.setCrack(DESTRUCTION3, 64 - i);
-      delay(5);
-    }
+  if (!(oldButtons & SW_B) && (curButtons & SW_B)) {
+    // Button B has been pressed, cycle LED animation list
+    curLEDAnimationListIndex++;
+    if (curLEDAnimationListIndex >= ArraySize(LED_ANIMATIONS)) curLEDAnimationListIndex = 0;
+    curLEDAnimationIndex = 0;
+    curLEDAnimationList = LED_ANIMATIONS[curLEDAnimationListIndex];
+    curLEDAnimation = curLEDAnimationList.animations[curLEDAnimationIndex];
+    forceLEDAnimationUpdate = 1;
+  }
+
+  if ((now - lastVFDTextSwitch) >= curVFDText.duration || forceVFDTextUpdate) {
+    if (!forceVFDTextUpdate) curVFDTextIndex++;
+    if (curVFDTextIndex >= curVFDTextList.count) curVFDTextIndex = 0;
+    curVFDText = curVFDTextList.texts[curVFDTextIndex];
+    badge.vfdSetScrollSpeed(0);
+    badge.vfdAnimate(curVFDText.text, curVFDText.animation);
+    badge.vfdSetScrollSpeed(curVFDText.scrollSpeed);
+    lastVFDTextSwitch = now;
+    forceVFDTextUpdate = 0;
+  }
+
+  if ((curLEDAnimationList.count > 1) && ((now - lastLEDAnimationSwitch) >= curLEDAnimation.duration) || forceLEDAnimationUpdate) {
+    // Switch only if there's more than one animation in the list or an update is forced
+    // This way, if there's only one animation, it won't be reset after the cycle duration
+    if (!forceLEDAnimationUpdate) curLEDAnimationIndex++;
+    if (curLEDAnimationIndex >= curLEDAnimationList.count) curLEDAnimationIndex = 0;
+    curLEDAnimation = curLEDAnimationList.animations[curLEDAnimationIndex];
+    (*curLEDAnimation.setupFunc)();
+    lastLEDAnimationSwitch = now;
+    lastLEDAnimationUpdate = 0; // force update
+    forceLEDAnimationUpdate = 0;
+  }
+
+  if ((now - lastLEDAnimationUpdate) >= curLEDAnimation.updateInterval)  {
+    (*curLEDAnimation.animFunc)();
+    lastLEDAnimationUpdate = now;
   }
 
   oldUSB = curUSB;
   oldChg = curChg;
   oldLow = curLow;
+  oldButtons = curButtons;
 }
