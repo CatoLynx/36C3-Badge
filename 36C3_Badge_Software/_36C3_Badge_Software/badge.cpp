@@ -47,9 +47,18 @@ ISR(TIMER2_COMPA_vect) {
   }
 
   badge.timer2InterruptCounter++;
+  if (badge.timer2InterruptCounter % 40 == 0) {
+    // Called every 5ms
+    badge.vfdAnimInterruptCounter++;
+    if (badge.vfdAnimInterruptCounter >= 5) {
+      // Called every 25ms
+      badge.vfdUpdateAnimation();
+      badge.vfdAnimInterruptCounter = 0;
+    }
+  }
   if (badge.timer2InterruptCounter % 80 == 0) {
     // Called every 10ms
-    badge.vfdDoScroll();
+    badge.vfdUpdateScroll();
   }
   if (badge.timer2InterruptCounter % 800 == 0) {
     // Called every 100ms
@@ -99,11 +108,12 @@ void Badge::begin() {
 
   vfdSetSupply(1);
 
+  vfdReset();
+
   vfdSPIBegin();
   vfdSendCmd(VFD_NUMDIGIT, VFD_NUM_CHARS);
   vfdSPIEnd();
-
-  vfdSetBrightness(15);
+  vfdSetBrightness(vfdBrightness);
   vfdSetTestMode(NONE);
 }
 
@@ -138,6 +148,7 @@ void Badge::vfdSetBrightness(uint8_t level) {
 
   if (level > 15) level = 15;
   vfdSendCmd(VFD_DUTY, level);
+  vfdBrightness = level;
 }
 
 void Badge::vfdSetSupply(uint8_t state) {
@@ -163,7 +174,7 @@ void Badge::vfdSetSupply(uint8_t state) {
   delay(1);
 }
 
-void Badge::vfdSetTestMode(t_VFDTestMode mode) {
+void Badge::vfdSetTestMode(vfd_test_mode_t mode) {
   // Set the VFD test mode (all segments on, all off or normal operation)
 
   switch (mode) {
@@ -185,8 +196,9 @@ void Badge::vfdSetTestMode(t_VFDTestMode mode) {
 void Badge::vfdWriteText(char* text) {
   // Output a text on the VFD
 
-  vfdScrollLen = strlen(text);
-  vfdScrollPos = VFD_NUM_CHARS - 1;
+  vfdStopAnimation();
+  vfdSetScrollSpeed(0);
+  vfdWriteTextInternal(text);
 
   if (vfdScrollLen > VFD_BUF_SIZE - 1) {
     vfdScrollLen = VFD_BUF_SIZE - 1;
@@ -198,80 +210,26 @@ void Badge::vfdWriteText(char* text) {
   vfdUpdate();
 }
 
-void Badge::vfdAnimate(char *text, t_VFDAnimation animation)
+void Badge::vfdAnimate(char *text, vfd_animation_t animation)
 {
-  int i, j;
-  int done = 0;
-  static char last[VFD_NUM_CHARS];
-  static char next[VFD_NUM_CHARS + 1];
+  memset(vfdAnimTarget, 0x00, VFD_BUF_SIZE);
+  strcpy(vfdAnimTarget, text);
+  vfdAnimBrightness = vfdBrightness;
+  vfdAnimMode = animation;
+  vfdAnimActive = 1;
+  vfdAnimFrame = 0;
+}
 
-  switch (animation) {
-    case ANIMATION_RANDOM: {
-        for (int j = 0; j < 25; ++j) {
-          for (i = 0; i < VFD_NUM_CHARS; ++i) {
-            next[i] = rand() % 26 + 'A';
-          }
-          next[VFD_NUM_CHARS] = 0x00;
-          vfdWriteText(next);
-          _delay_ms(VFD_ANI_DELAY);
-        }
+void Badge::vfdStopAnimation() {
+  // Stop an ongoig animation and restore previous values
 
-        vfdWriteText(text);
-        break;
-      }
-
-    case ANIMATION_FLIP: {
-        while (!done) {
-          for (int j = 0; j < 25; ++j) {
-            done = 1;
-            for (i = 0; i < VFD_NUM_CHARS; ++i) {
-              if (last[i] > text[i]) {
-                while (vfdGetCode(--last[i]) == 79) {
-                  if (last[i] == '?')
-                    break;
-                }
-                done = 0;
-              } else if (last[i] < text[i]) {
-                while (vfdGetCode(++last[i]) == 79) {
-                  if (last[i] == '?')
-                    break;
-                }
-                done = 0;
-              }
-            }
-            vfdWriteText(last);
-            _delay_ms(VFD_ANI_DELAY);
-          }
-        }
-        vfdWriteText(text);
-        break;
-      }
-
-    case ANIMATION_SLIDE: {
-        for (j = 0; j < VFD_NUM_CHARS; ++j) {
-          for (i = 1; i < VFD_NUM_CHARS; ++i) {
-            last[i - 1] = last[i];
-          }
-          last[VFD_NUM_CHARS - 1] = text[j];
-          vfdWriteText(last);
-          _delay_ms(VFD_ANI_DELAY);
-        }
-        vfdWriteText(text);
-        break;
-      }
-
-    default: {
-        vfdWriteText(text);
-        break;
-      }
-  }
-
-  for (i = 0; i < VFD_NUM_CHARS; ++i) {
-    last[i] = text[i];
-  }
+  vfdAnimActive = 0;
+  vfdSetBrightness(vfdAnimBrightness);
 }
 
 void Badge::vfdSetCharacter(uint8_t addr, char* charData) {
+  // Set a custom character
+
   vfdSPIBegin();
   vfdSPISelect();
   vfdSendCmdSeq(VFD_CGRAM_WR, addr & 0x0f);
@@ -281,13 +239,28 @@ void Badge::vfdSetCharacter(uint8_t addr, char* charData) {
   vfdSPIEnd();
 }
 
+char Badge::vfdGetCode(char c) {
+  // Get the VFD character code for a given ASCII character
+
+  if (c >= '@' && c <= '_')   // 64.. -> 16..
+    c -= 48;
+  else if (c >= ' ' && c <= '?') // 32.. -> 48..
+    c += 16;
+  else if (c >= 'a' && c <= 'z') // 97.. -> 17..
+    c -= 80;
+  else if (c > 15)  // invalid and not a custom char -> ?
+    c = 79;
+
+  return c;
+}
+
 void Badge::vfdSetScrollSpeed(uint32_t speed) {
   // Enable scrolling on the VFD. Speed = number of 10ms intervals between movements
 
   vfdScrollSpeed = speed;
 }
 
-void Badge::vfdDoScroll() {
+void Badge::vfdUpdateScroll() {
   // Advance the scroll position of the VFD (to be called by a timer interrupt)
 
   if (vfdScrollSpeed == 0) return;
@@ -309,23 +282,99 @@ void Badge::vfdDoScroll() {
   }
 }
 
-char Badge::vfdGetCode(char c) {
-  // Get the VFD character code for a given ASCII character
+void Badge::vfdUpdateAnimation() {
+  // Render the next animation frame on the VFD (to be called by a timer interrupt)
 
-  if (c >= '@' && c <= '_')   // 64.. -> 16..
-    c -= 48;
-  else if (c >= ' ' && c <= '?') // 32.. -> 48..
-    c += 16;
-  else if (c >= 'a' && c <= 'z') // 97.. -> 17..
-    c -= 80;
-  else if (c > 15)  // invalid and not a custom char -> ?
-    c = 79;
+  if (!vfdAnimActive) return;
 
-  return c;
+  switch (vfdAnimMode) {
+    case ANIMATION_RANDOM: {
+        if (vfdAnimFrame == 25) {
+          vfdWriteTextInternal(vfdAnimTarget);
+          vfdAnimActive = 0;
+          break;
+        }
+
+        for (uint8_t i = 0; i < VFD_NUM_CHARS; i++) {
+          vfdAnimBuffer[i] = rand() % 26 + 'A';
+        }
+        vfdWriteTextInternal(vfdAnimBuffer);
+        break;
+      }
+
+    case ANIMATION_FLIP: {
+        if (vfdAnimFrame == 50) {
+          vfdWriteTextInternal(vfdAnimTarget);
+          vfdAnimActive = 0;
+          break;
+        }
+
+        uint8_t done = 1;
+        for (uint8_t i = 0; i < VFD_NUM_CHARS; i++) {
+          if (vfdAnimBuffer[i] > vfdAnimTarget[i]) {
+            while (vfdGetCode(--vfdAnimBuffer[i]) == 79) {
+              if (vfdAnimBuffer[i] == '?') break;
+            }
+            done = 0;
+          } else if (vfdAnimBuffer[i] < vfdAnimTarget[i]) {
+            while (vfdGetCode(++vfdAnimBuffer[i]) == 79) {
+              if (vfdAnimBuffer[i] == '?') break;
+            }
+            done = 0;
+          }
+        }
+
+        if (done) {
+          vfdWriteTextInternal(vfdAnimTarget);
+          vfdAnimActive = 0;
+        } else {
+          vfdWriteTextInternal(vfdAnimBuffer);
+        }
+        break;
+      }
+
+    case ANIMATION_SLIDE: {
+        if (vfdAnimFrame == VFD_NUM_CHARS - 1) {
+          vfdWriteTextInternal(vfdAnimTarget);
+          vfdAnimActive = 0;
+          break;
+        }
+
+        for (uint8_t i = 1; i < VFD_NUM_CHARS; i++) {
+          vfdAnimBuffer[i - 1] = vfdAnimBuffer[i];
+        }
+        vfdAnimBuffer[VFD_NUM_CHARS - 1] = vfdAnimTarget[vfdAnimFrame];
+        vfdWriteTextInternal(vfdAnimBuffer);
+        break;
+      }
+
+    case ANIMATION_FADE: {
+        int8_t newBrightness = (int8_t)vfdAnimBrightness - (vfdAnimFrame + 1);
+        if (newBrightness >= 0) {
+          vfdSetBrightness(newBrightness);
+        }
+        if (newBrightness == 0) {
+          vfdWriteTextInternal(vfdAnimTarget);
+        }
+        if (newBrightness < 0 && newBrightness >= -vfdAnimBrightness) {
+          vfdSetBrightness(-newBrightness);
+        }
+        if (newBrightness == -vfdAnimBrightness) vfdAnimActive = 0;
+        break;
+      }
+
+    default: {
+        vfdWriteTextInternal(vfdAnimTarget);
+        vfdAnimActive = 0;
+        break;
+      }
+  }
+
+  vfdAnimFrame++;
 }
 
-void Badge::setCrack(t_Crack crack, uint8_t value) {
-  // Set a PWM value for thegiven illuminated crack
+void Badge::setCrack(crack_t crack, uint8_t value) {
+  // Set a PWM value for the given illuminated crack
 
   switch (crack) {
     case DESTRUCTION1: {
@@ -372,10 +421,10 @@ uint8_t Badge::battGetLevel() {
   return percentage;
 }
 
-t_Buttons Badge::btnGetAll() {
+buttons_t Badge::btnGetAll() {
   // Read all buttons
 
-  t_Buttons buttons = SW_NONE;
+  buttons_t buttons = SW_NONE;
   if (!digitalRead(PIN_SW_STBY)) buttons |= SW_STBY;
   if (!digitalRead(PIN_SW_A)) buttons |= SW_A;
   if (!digitalRead(PIN_SW_B)) buttons |= SW_B;
@@ -435,6 +484,22 @@ void Badge::vfdSendChar(char c) {
   delayMicroseconds(8); // tDOFF and 1/2 tCSH for last data
 }
 
+void Badge::vfdWriteTextInternal(char* text) {
+  // Output a text on the VFD
+
+  vfdScrollLen = strlen(text);
+  vfdScrollPos = VFD_NUM_CHARS - 1;
+
+  if (vfdScrollLen > VFD_BUF_SIZE - 1) {
+    vfdScrollLen = VFD_BUF_SIZE - 1;
+    text[vfdScrollLen] = '\0';
+  }
+
+  vfdClearBuffer();
+  strcpy(vfdBuffer, text);
+  vfdUpdate();
+}
+
 void Badge::vfdUpdate() {
   // Update the VFD contents
 
@@ -446,6 +511,7 @@ void Badge::vfdUpdate() {
   int16_t p = vfdScrollPos;
 
   for (int16_t i = 0; i < VFD_NUM_CHARS; i++) {
+    vfdAnimBuffer[VFD_NUM_CHARS - (i + 1)] = vfdBuffer[p];
     if (vfdBuffer[p] == 0x00) {
       vfdSendChar(' ');
       p--;
@@ -456,6 +522,7 @@ void Badge::vfdUpdate() {
     if (p < 0)
       p = vfdScrollLen - 1;
   }
+  vfdAnimBuffer[VFD_NUM_CHARS] = 0x00;
 
   vfdSPIDeselect();
   vfdSPIEnd();

@@ -15,7 +15,7 @@ char text[VFD_BUF_SIZE];
 uint8_t curUSB, oldUSB = 0;
 uint8_t curChg, oldChg = 0;
 uint8_t curLow, oldLow = 0;
-t_Buttons oldButtons, curButtons;
+buttons_t oldButtons, curButtons;
 
 uint8_t curVFDTextListIndex = 0;
 uint8_t curVFDTextIndex = 0;
@@ -30,6 +30,8 @@ led_animation_t curLEDAnimation;
 
 uint8_t forceVFDTextUpdate = 1;
 uint8_t forceLEDAnimationUpdate = 1;
+
+uint8_t scrollSpeedSet = 0;
 
 uint64_t lastLEDAnimationUpdate = 0;
 uint64_t lastLEDAnimationSwitch = 0;
@@ -55,21 +57,23 @@ void loop()
   curLow = badge.pwrGetLowBatt();
   curButtons = badge.btnGetAll();
 
-  if (curUSB && !oldUSB) {
-    badge.vfdWriteText("USB POWER");
-    delay(1000);
-  } else if (!curUSB && oldUSB) {
-    badge.vfdWriteText("BATT POWER");
-    delay(1000);
-  }
+  /*
+    if (curUSB && !oldUSB) {
+      badge.vfdWriteText("USB POWER");
+      delay(1000);
+    } else if (!curUSB && oldUSB) {
+      badge.vfdWriteText("BATT POWER");
+      delay(1000);
+    }
 
-  if (curChg && !oldChg) {
-    badge.vfdWriteText("CHARGING");
-    delay(1000);
-  } else if (!curChg && oldChg) {
-    badge.vfdWriteText("CHARGED");
-    delay(1000);
-  }
+    if (curChg && !oldChg) {
+      badge.vfdWriteText("CHARGING");
+      delay(1000);
+    } else if (!(!curUSB && oldUSB) && !curChg && oldChg) {
+      badge.vfdWriteText("CHARGED");
+      delay(1000);
+    }
+  */
 
   if (curLow && !oldLow) {
     badge.vfdWriteText("LOW BATT");
@@ -84,6 +88,7 @@ void loop()
     curVFDTextList = VFD_TEXTS[curVFDTextListIndex];
     curVFDText = curVFDTextList.texts[curVFDTextIndex];
     forceVFDTextUpdate = 1; // force update
+    badge.vfdStopAnimation();
   }
 
   if (!(oldButtons & SW_B) && (curButtons & SW_B)) {
@@ -96,15 +101,53 @@ void loop()
     forceLEDAnimationUpdate = 1;
   }
 
-  if ((now - lastVFDTextSwitch) >= curVFDText.duration || forceVFDTextUpdate) {
+  if ((curVFDTextList.count > 1) && ((now - lastVFDTextSwitch) >= curVFDText.duration) || forceVFDTextUpdate) {
+    // Switch only if there's more than one text in the list or an update is forced
+    // This way, if there's only one textation, it won't be re-animated after the cycle duration
     if (!forceVFDTextUpdate) curVFDTextIndex++;
     if (curVFDTextIndex >= curVFDTextList.count) curVFDTextIndex = 0;
     curVFDText = curVFDTextList.texts[curVFDTextIndex];
     badge.vfdSetScrollSpeed(0);
-    badge.vfdAnimate(curVFDText.text, curVFDText.animation);
-    badge.vfdSetScrollSpeed(curVFDText.scrollSpeed);
+    switch (curVFDText.flags) {
+      case TF_BAT_VOLT: {
+          sprintf(text, curVFDText.text, badge.battGetVoltage());
+          break;
+        }
+
+      case TF_BAT_PERCENT: {
+          sprintf(text, curVFDText.text, badge.battGetLevel());
+          break;
+        }
+
+      case TF_PWR_SRC: {
+          sprintf(text, curVFDText.text, curUSB ? "USB" : "BAT");
+          break;
+        }
+
+      case TF_CHG_STAT: {
+          sprintf(text, curVFDText.text, curChg ? "YES" : "NO");
+          break;
+        }
+
+      case TF_LOW_BAT_STAT: {
+          sprintf(text, curVFDText.text, curLow ? "YES" : "NO");
+          break;
+        }
+
+      default: {
+          strcpy(text, curVFDText.text);
+          break;
+        }
+    }
+    badge.vfdAnimate(text, curVFDText.animation);
+    scrollSpeedSet = 0;
     lastVFDTextSwitch = now;
     forceVFDTextUpdate = 0;
+  }
+
+  if (!scrollSpeedSet && !badge.vfdAnimActive) {
+    badge.vfdSetScrollSpeed(curVFDText.scrollSpeed);
+    scrollSpeedSet = 1;
   }
 
   if ((curLEDAnimationList.count > 1) && ((now - lastLEDAnimationSwitch) >= curLEDAnimation.duration) || forceLEDAnimationUpdate) {

@@ -19,7 +19,7 @@
 #define VFD_LI_ON     0x02  // All segments on
 
 #define VFD_NUM_CHARS 12    // Number of characters on VFD
-#define VFD_BUF_SIZE  100   // Scroll buffer for VFD
+#define VFD_BUF_SIZE  50   // Scroll buffer for VFD
 
 #define VFD_ANI_DELAY 15    // Animation frame delay in milliseconds
 
@@ -29,27 +29,28 @@ typedef enum Crack {
   DESTRUCTION3,
   HOPE1,
   HOPE2
-} t_Crack;
+} crack_t;
 
 typedef enum VFDTestMode {
   NONE,
   ALL_ON,
   ALL_OFF
-} t_VFDTestMode;
+} vfd_test_mode_t;
 
 typedef enum Buttons {
   SW_NONE = 0,
   SW_STBY = 1,
   SW_A = 2,
   SW_B = 4
-} t_Buttons;
+} buttons_t;
 
 typedef enum VFDAnimations {
   ANIMATION_NONE,
   ANIMATION_RANDOM,
   ANIMATION_FLIP,
-  ANIMATION_SLIDE
-} t_VFDAnimation;
+  ANIMATION_SLIDE,
+  ANIMATION_FADE
+} vfd_animation_t;
 
 class Badge
 {
@@ -72,11 +73,14 @@ class Badge
 
     volatile uint8_t pwmCounter = 0;
     volatile uint16_t timer2InterruptCounter = 0;
+    volatile uint8_t vfdAnimInterruptCounter = 0;
     uint8_t pwmValueDestruction1 = 0;
     uint8_t pwmValueDestruction2 = 0;
     uint8_t pwmValueDestruction3 = 0;
     uint8_t pwmValueHope1 = 0;
     uint8_t pwmValueHope2 = 0;
+
+    volatile uint8_t vfdAnimActive = 0;
 
     Badge();
     void begin();
@@ -84,18 +88,20 @@ class Badge
     void sleep();
     void vfdSetBrightness(uint8_t level);
     void vfdSetSupply(uint8_t state);
-    void vfdSetTestMode(t_VFDTestMode mode);
+    void vfdSetTestMode(vfd_test_mode_t mode);
     void vfdWriteText(char* text);
-    void vfdAnimate(char *text, t_VFDAnimation animation);
+    void vfdAnimate(char *text, vfd_animation_t animation);
+    void vfdStopAnimation();
     void vfdSetCharacter(uint8_t addr, char* charData);
-    void vfdSetScrollSpeed(uint32_t speed);
-    void vfdDoScroll();
     char vfdGetCode(char c);
-    void setCrack(t_Crack crack, uint8_t value);
+    void vfdSetScrollSpeed(uint32_t speed);
+    void vfdUpdateScroll();
+    void vfdUpdateAnimation();
+    void setCrack(crack_t crack, uint8_t value);
     void battUpdateAverage();
     uint16_t battGetVoltage();
     uint8_t battGetLevel();
-    t_Buttons btnGetAll();
+    buttons_t btnGetAll();
     uint8_t pwrGetUSB();
     uint8_t pwrGetCharging();
     uint8_t pwrGetLowBatt();
@@ -104,24 +110,32 @@ class Badge
 
   private:
     char vfdBuffer[VFD_BUF_SIZE];
+    volatile char vfdAnimBuffer[VFD_NUM_CHARS + 1];
     const SPISettings spiConfig;
 
-    int16_t vfdScrollLen;
-    int16_t vfdScrollPos;
-    uint32_t vfdScrollSpeed;
+    volatile int16_t vfdScrollLen;
+    volatile int16_t vfdScrollPos;
+    volatile uint32_t vfdScrollSpeed;
 
-    uint16_t vfdSetScrollSpeedTickCount = 0;
+    volatile uint16_t vfdSetScrollSpeedTickCount = 0;
+
+    volatile uint8_t vfdBrightness = 15;
+    volatile vfd_animation_t vfdAnimMode = ANIMATION_NONE;
+    volatile char vfdAnimTarget[VFD_BUF_SIZE];
+    volatile uint8_t vfdAnimFrame = 0;
+    volatile uint8_t vfdAnimBrightness = vfdBrightness;
 
     static const uint8_t BATT_AVG_NUM_VALUES = 10;
-    uint16_t battAverage = 0;
-    uint32_t battAvgSum = 0;
-    uint16_t battAvgPos = 0;
-    uint16_t battAvgValues[BATT_AVG_NUM_VALUES] = {0};
+    volatile uint16_t battAverage = 0;
+    volatile uint32_t battAvgSum = 0;
+    volatile uint16_t battAvgPos = 0;
+    volatile uint16_t battAvgValues[BATT_AVG_NUM_VALUES] = {0};
 
     void vfdReset();
     void vfdSendCmd(char cmd, char arg);
     void vfdSendCmdSeq(char cmd, char arg);
     void vfdSendChar(char c);
+    void vfdWriteTextInternal(char* text);
     void vfdUpdate();
     void vfdSPIBegin();
     void vfdSPIEnd();

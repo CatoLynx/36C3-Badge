@@ -5,11 +5,22 @@
 
 typedef void (*func_t)(void);
 
+// Special flags to display data instead of a normal text
+typedef enum VFDTextFlags {
+  TF_NONE,        // Regular text
+  TF_BAT_VOLT,    // Display battery voltage (~3000-4200; requires %d in the text)
+  TF_BAT_PERCENT, // Display battery level in percent (0-100; requires %d in the text)
+  TF_PWR_SRC,     // Display power source (USB/BAT; requires %s in the text)
+  TF_CHG_STAT,    // Display charging status (YES/NO; requires %s in the text)
+  TF_LOW_BAT_STAT // Display low battery status (YES/NO; requires %s in the text)
+} vfd_text_flags_t;
+
 typedef struct VFDText {
   const char *text;
-  t_VFDAnimation animation;
+  vfd_animation_t animation;
   uint8_t scrollSpeed;
   uint16_t duration;
+  vfd_text_flags_t flags;
 } vfd_text_t;
 
 typedef struct VFDTexts {
@@ -30,22 +41,25 @@ typedef struct LEDAnimations {
 } led_animation_list_t;
 
 const vfd_text_list_t VFD_TEXTS[] = {
-  { 3, (vfd_text_t[]) {
-      { "Text 1-1    ", ANIMATION_NONE, 0, 2000 },
-      { "Text 1-2    ", ANIMATION_NONE, 8, 2000 },
-      { "Text 1-3    ", ANIMATION_NONE, 0, 2000 }
-    }
-  },
-  { 4, (vfd_text_t[]) {
-      { "Text 2-1    ", ANIMATION_NONE, 0, 2000 },
-      { "Text 2-2    ", ANIMATION_NONE, 8, 2000 },
-      { "Text 2-3    ", ANIMATION_NONE, 0, 2000 },
-      { "Text 2-4    ", ANIMATION_NONE, 0, 2000 }
+  { 5, (vfd_text_t[]) {
+      { "NO ANIMATION", ANIMATION_NONE, 0, 3000 },
+      { "FADING ANIMATION WITH SCROLLING TEXT              ", ANIMATION_FADE, 8, 5000, TF_NONE },
+      { "FLIP ANIMATION GOTTA GO FAST     ", ANIMATION_FLIP, 4, 4000, TF_NONE },
+      { "RANDOM ANIM ", ANIMATION_RANDOM, 0, 2000, TF_NONE },
+      { "SLIDING ANIM", ANIMATION_SLIDE, 0, 2000, TF_NONE },
     }
   },
   { 2, (vfd_text_t[]) {
-      { "Text 3-1    ", ANIMATION_NONE, 0, 2000 },
-      { "Text 3-2    ", ANIMATION_NONE, 8, 2000 },
+      { "Another text", ANIMATION_FADE, 0, 2000, TF_NONE },
+      { "and another ", ANIMATION_FADE, 0, 2000, TF_NONE },
+    }
+  },
+  { 5, (vfd_text_t[]) {
+      { "BAT %d MV", ANIMATION_NONE, 0, 1000, TF_BAT_VOLT },
+      { "BAT LVL %d", ANIMATION_NONE, 0, 1000, TF_BAT_PERCENT },
+      { "PWR SRC %s", ANIMATION_NONE, 0, 1000, TF_PWR_SRC },
+      { "CHARGING %s", ANIMATION_NONE, 0, 1000, TF_CHG_STAT },
+      { "LOW BATT %s", ANIMATION_NONE, 0, 1000, TF_LOW_BAT_STAT },
     }
   }
 };
@@ -157,7 +171,7 @@ const led_animation_list_t LED_ANIMATIONS[] = {
     }
   },
   { 2, (led_animation_t[]) {
-      { anim21Setup, anim21Loop, 5, 1500 },
+      { anim21Setup, anim21Loop, 5, 500 },
       { anim22Setup, anim22Loop, 5, 500 },
     }
   }
