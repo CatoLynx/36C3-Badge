@@ -105,6 +105,7 @@ class Badge
     uint8_t pwrGetUSB();
     uint8_t pwrGetCharging();
     uint8_t pwrGetLowBatt();
+    void pwrCheckError();
 
   protected:
 

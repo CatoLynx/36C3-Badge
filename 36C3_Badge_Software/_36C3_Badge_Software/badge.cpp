@@ -124,6 +124,8 @@ void Badge::wakeUp() {
   attachInterrupt(digitalPinToInterrupt(PIN_SW_STBY), _sleep, FALLING);
   vfdSetSupply(1);
   startTimer2();
+
+  pwrCheckError();
 }
 
 void Badge::sleep() {
@@ -447,6 +449,20 @@ uint8_t Badge::pwrGetLowBatt() {
   // Check whether the battery level is low (1) or not (0)
 
   return !digitalRead(PIN_PMIC_STAT1_LBO) && digitalRead(PIN_PMIC_PG);
+}
+
+void Badge::pwrCheckError() {
+  // Check for an unrealistic battery voltage caused by some design error
+  // and display an error message
+
+  if (analogRead(PIN_BATT_ADC) < 920) return;
+  setCrack(DESTRUCTION1, 0);
+  setCrack(DESTRUCTION2, 0);
+  setCrack(DESTRUCTION3, 0);
+  setCrack(HOPE1, 0);
+  setCrack(HOPE2, 0);
+  vfdWriteText("ERR TURN OFF");
+  while (1);
 }
 
 // PRIVATE PARTS

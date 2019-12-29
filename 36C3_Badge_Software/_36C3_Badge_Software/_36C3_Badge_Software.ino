@@ -43,6 +43,8 @@ void setup()
   Serial.begin(115200);
   badge.begin();
 
+  badge.pwrCheckError();
+
   curVFDTextList = VFD_TEXTS[curVFDTextListIndex];
   curVFDText = curVFDTextList.texts[curVFDTextIndex];
   curLEDAnimationList = LED_ANIMATIONS[curLEDAnimationListIndex];
