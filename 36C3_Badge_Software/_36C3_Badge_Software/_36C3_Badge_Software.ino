@@ -42,6 +42,7 @@ void setup()
 {
   Serial.begin(115200);
   badge.begin();
+  delay(100); // Wait for button debounce caps to charge to avoid erroneous button presses
 
   badge.pwrCheckError();
 
